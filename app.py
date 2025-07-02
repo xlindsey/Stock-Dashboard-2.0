@@ -48,4 +48,11 @@ def get_data(tickers):
     return pd.DataFrame(summary)
 
 df = get_data(tickers)
-st.dataframe(df, use_container_width=True)
+def style_change_column(change):
+    try:
+        change = float(change)
+        color = "green" if change > 0 else "red"
+        return f'<span style="color:{color}">{change:.2f}%</span>'
+    except:
+        return f'<span>{change}</span>'
+
