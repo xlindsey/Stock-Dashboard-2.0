@@ -4,13 +4,8 @@ import pandas as pd
 
 st.set_page_config(page_title="My Stock Dashboard", layout="wide")
 
-# Default watchlist (you can replace this later)
-default_tickers = ["AAPL", "MSFT", "TSLA", "NVDA", "AMZN"]
-
-st.title("📈 My Stock Dashboard")
-
 # --- Load tickers from Google Sheets ---
-sheet_url = "https://docs.google.com/spreadsheets/d/1v83Ttv3Rqlo3YUfU2iESWFWAtqK95CB7V0rQWqB9spM/export?format=csv"
+sheet_url = "https://docs.google.com/spreadsheets/d/1vB3Ttv3Rqlo3yUFU2iESWFNAtqK9SCB7VerQWqB9spM/export?format=csv"
 
 @st.cache_data(ttl=300)
 def load_tickers_from_gsheet(url):
@@ -24,8 +19,9 @@ def load_tickers_from_gsheet(url):
 
 tickers = load_tickers_from_gsheet(sheet_url)
 
+st.title("📈 My Stock Dashboard")
 
-# --- Fetch Data ---
+# --- Fetch stock data ---
 def get_data(tickers):
     data = yf.download(tickers=tickers, period="1d", interval="1m", group_by='ticker', threads=True)
     summary = []
@@ -34,12 +30,13 @@ def get_data(tickers):
             last_price = data[ticker]['Close'][-1]
             prev_close = yf.Ticker(ticker).info.get("previousClose", 0)
             pct_change = ((last_price - prev_close) / prev_close) * 100 if prev_close else 0
+
             summary.append({
                 "Ticker": ticker,
                 "Price": round(last_price, 2),
                 "Change (%)": round(pct_change, 2)
             })
-        except Exception as e:
+        except Exception:
             summary.append({
                 "Ticker": ticker,
                 "Price": "Error",
@@ -48,6 +45,8 @@ def get_data(tickers):
     return pd.DataFrame(summary)
 
 df = get_data(tickers)
+
+# --- Style % change column with red/green ---
 def style_change_column(change):
     try:
         change = float(change)
@@ -56,3 +55,7 @@ def style_change_column(change):
     except:
         return f'<span>{change}</span>'
 
+df["Change (%)"] = df["Change (%)"].apply(style_change_column)
+
+# --- Show table using HTML (not st.dataframe) ---
+st.write(df.to_html(escape=False, index=False), unsafe_allow_html=True)
