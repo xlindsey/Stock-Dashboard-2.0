@@ -27,7 +27,17 @@ st.caption(f"Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'
 
 # --- Fetch Data ---
 def get_data(tickers):
-    data = yf.download(tickers=tickers, period="1d", interval="1m", group_by='ticker', threads=True)
+    tickers = [t for t in tickers if t]  # remove empty strings
+    if not tickers:
+        st.warning("No valid tickers to fetch.")
+        return pd.DataFrame()
+
+    try:
+        data = yf.download(tickers=tickers, period="1d", interval="1m", group_by='ticker', threads=True)
+    except Exception as e:
+        st.error(f"Failed to download data: {e}")
+        return pd.DataFrame()
+
     summary = []
     for ticker in tickers:
         try:
@@ -42,7 +52,7 @@ def get_data(tickers):
                 "Change (%)": round(pct_change, 2),
                 "Chart": intraday
             })
-        except Exception as e:
+        except Exception:
             summary.append({
                 "Ticker": ticker,
                 "Price": "Error",
@@ -51,7 +61,6 @@ def get_data(tickers):
             })
     return pd.DataFrame(summary)
 
-df = get_data(tickers)
 
 # --- Color % Change and Add Sparklines ---
 def format_row(row):
