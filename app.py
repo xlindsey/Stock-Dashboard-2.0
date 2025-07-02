@@ -4,21 +4,22 @@ import pandas as pd
 
 st.set_page_config(page_title="My Stock Dashboard", layout="wide")
 
-# Default watchlist (you can replace this later)
-default_tickers = ["AAPL", "MSFT", "TSLA", "NVDA", "AMZN"]
+# --- Load tickers from Google Sheets ---
+sheet_url = "https://docs.google.com/spreadsheets/d/1v83Ttv3Rqlo3YUfU2iESWFWAtqK95CB7V0rQWqB9spM/export?format=csv"
+
+@st.cache_data(ttl=300)
+def load_tickers_from_gsheet(url):
+    try:
+        df = pd.read_csv(url)
+        tickers = df.iloc[:, 0].dropna().astype(str).str.upper().tolist()
+        return tickers
+    except Exception as e:
+        st.error(f"Failed to load tickers from Google Sheets: {e}")
+        return []
+
+tickers = load_tickers_from_gsheet(sheet_url)
 
 st.title("📈 My Stock Dashboard")
-
-# --- Sidebar Form to Edit Tickers ---
-with st.sidebar.form("tickers_form"):
-    st.subheader("Edit Your Watchlist")
-    tickers_input = st.text_area("Enter tickers (comma-separated):", ",".join(default_tickers))
-    submitted = st.form_submit_button("Update")
-
-if submitted:
-    tickers = [x.strip().upper() for x in tickers_input.split(",") if x.strip()]
-else:
-    tickers = default_tickers
 
 # --- Fetch Data ---
 def get_data(tickers):
